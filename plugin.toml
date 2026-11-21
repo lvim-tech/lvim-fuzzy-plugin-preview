@@ -1,0 +1,86 @@
+description = "Previews of files: WHICH ENGINE shows a file type is this plugin's configuration; the tool only draws the answer"
+runtime     = "process"
+exec        = "./target/release/lvim-fuzzy-plugin-preview"
+build       = "cargo build --release"
+hosts       = ["lvim-fuzzy-commander", "lvim-fuzzy-cli", "lvim-fuzzy-picker"]
+version     = "0.1.1"
+license     = "BSD-3-Clause"
+
+# EVERYTHING here is configuration: which kinds of file are shown by which ENGINE, and what the engines are. Override
+# any key in ~/.config/lvim-plugins/lvim-fuzzy-plugin-preview.toml (every tool) or in one tool's own config under
+# [plugins.lvim-fuzzy-plugin-preview] (that tool only) — each tool may map the types differently.
+
+# TYPES: a group of files and the engine that shows it. A group matches by `ext` (extensions), `name` (file names),
+# `mime` ("image/*", "application/pdf" ...) and / or `kind` ("dir", "binary" = a NUL in the first 8 KB, "text");
+# every key that is given must hold. The most specific group wins: one with `ext` / `name` / `mime` before one with
+# `kind` only, then the higher `priority`.
+# A file no group matches is passed back to the tool (its own providers, then nothing).
+[config.types.directories]
+kind   = ["dir"]
+engine = "dir"
+[config.types.tables]
+ext    = ["csv", "tsv"]
+engine = "table"
+[config.types.archives]
+ext    = ["tar", "gz", "tgz", "xz", "txz", "bz2", "tbz", "tbz2", "zst", "tzst", "zip", "jar", "apk", "epub", "7z", "rar", "deb", "rpm", "iso", "cpio", "cab", "xar", "lz", "lzma"]
+engine = "archive"
+[config.types.binary]
+kind   = ["binary"]
+engine = "binary"
+# MEDIA: a picture, a video (a frame), a PDF page, a font sample, a sound's cover, an office document — the engine
+# `media` makes the facts and the picture (ffmpeg / pdftoppm / fontimage / LibreOffice are optional: what is missing
+# is said under the facts). Change one group to another engine, or add `mime = ["image/*"]` groups of your own.
+[config.types.images]
+ext    = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "ico", "avif", "heic", "heif", "jxl", "pnm", "ppm", "pgm", "pbm", "tga", "qoi"]
+engine = "media"
+[config.types.svg]
+ext    = ["svg", "svgz"]
+engine = "media"
+[config.types.video]
+ext    = ["mp4", "mkv", "webm", "mov", "avi", "m4v", "wmv", "flv", "mpg", "mpeg", "ts", "3gp", "ogv"]
+engine = "media"
+[config.types.pdf]
+ext    = ["pdf"]
+engine = "media"
+[config.types.fonts]
+ext    = ["ttf", "otf", "woff", "woff2", "ttc", "pfb"]
+engine = "media"
+[config.types.audio]
+ext    = ["mp3", "flac", "ogg", "opus", "m4a", "wav", "aac", "wma", "alac", "aiff", "ape"]
+engine = "media"
+[config.types.documents]
+ext    = ["docx", "doc", "odt", "rtf", "xlsx", "xls", "ods", "pptx", "ppt", "odp", "fodt", "docm", "xlsm"]
+engine = "media"
+# by MIME type instead of extensions (the type comes from the extension, else from `file --mime-type`):
+#   [config.types.images]
+#   mime   = ["image/*"]
+#   engine = "host"           # or your own engine, e.g. one running chafa
+[config.types.text]
+kind   = ["text"]
+engine = "nvim"          # "nvim" | "builtin" | "bat" | any engine below.   e.g. rust = { ext = ["rs"], engine = "bat" }
+
+# ENGINES. The built-in ones need no definition: dir, table, archive, binary, media, nvim (a real Neovim: the embedded one
+# in lvc / lfz, the picker's own buffer), builtin (the tool's own highlighter), host (pass: the tool's own way).
+# Your own are `kind = "command"`: `command` runs with `{}` = the file, its output is the preview (`ansi` = it
+# carries colours). The program must be on the PATH: if it is not, the preview says so and shows the file plain.
+[config.engines.bat]
+kind      = "command"
+command   = "bat --color=always --style=numbers --paging=never --line-range=:500 {}"
+ansi      = true
+[config.engines.glow]
+kind      = "command"
+command   = "glow -s dark {}"
+ansi      = true
+
+[config.dir]
+hidden = false          # show the dot files of a directory
+[config.table]
+rows = 500              # how many lines of a CSV / TSV file are read
+[config.archive]
+max_rows = 5000         # how many entries of an archive are listed
+[config.limits]
+max_lines = 500         # how much of a file a command engine's output may be
+
+# One catch-all provider: the choice is the configuration above, not this file.
+[preview.any]
+priority = 50
