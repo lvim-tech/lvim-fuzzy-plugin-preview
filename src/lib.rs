@@ -414,13 +414,12 @@ pub fn run_if_asked(args: &[String]) {
     }
 }
 
-/// Make sure the plugin is installed in the shared plugins directory `root` for the running tool: the first of lfz
-/// / lvc (the Neovim picker goes through lfz) to start writes it, whoever comes first. Silent: a directory that
-/// cannot be written just means no preview plugin (the tool then shows no preview of those files).
-pub fn ensure_installed(root: &Path) {
-    let Ok(exe) = std::env::current_exe() else { return };
+/// Write the plugin's `plugin.toml` into the shared plugins directory `root`, with `exe` answering as the plugin. A tool calls this only when
+/// its config says so (`[plugins.lvim-fuzzy-plugin-preview] install = …`, see `lvim_fuzzy_plugin::bundled::Install`). Silent: a directory
+/// that cannot be written just means no preview plugin (the tool then shows no preview of those files).
+pub fn ensure_installed(root: &Path, exe: &Path) {
     let b = lvim_fuzzy_plugin::bundled::Bundled { name: "lvim-fuzzy-plugin-preview", version: env!("CARGO_PKG_VERSION"), manifest: MANIFEST };
-    let _ = lvim_fuzzy_plugin::bundled::ensure(root, &b, &exe, &PLUGIN_ARGS.join(" "));
+    let _ = lvim_fuzzy_plugin::bundled::ensure(root, &b, exe, &PLUGIN_ARGS.join(" "));
     // this plugin was `lvim-fuzzy-preview` before it joined the `lvim-fuzzy-plugin-*` family: the copy an older tool
     // wrote would answer next to this one
     let _ = lvim_fuzzy_plugin::bundled::retire(root, "lvim-fuzzy-preview");
