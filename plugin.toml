@@ -15,6 +15,10 @@ license     = "BSD-3-Clause"
 # every key that is given must hold. The most specific group wins: one with `ext` / `name` / `mime` before one with
 # `kind` only, then the higher `priority`.
 # A file no group matches is passed back to the tool (its own providers, then nothing).
+# The engines that need no definition: [name, the program it runs, or ""] (the tools list them in `--list`).
+[config]
+builtin_engines = [["dir", ""], ["table", ""], ["archive", ""], ["binary", ""], ["hex", ""], ["media", ""], ["nvim", ""], ["builtin", ""], ["host", ""]]
+
 [config.types.directories]
 kind   = ["dir"]
 engine = "dir"

@@ -5,6 +5,22 @@ The preview plugin of the lvim tools (`lvc`, `lfz`, the Neovim picker). It **dec
 
 A `process` plugin (JSON lines); build with `cargo build --release`, install with `lvim-fuzzy-plugin install`.
 
+
+## Installation
+
+A plugin is a program of its own — no tool carries it. `./scripts/install.sh` builds it (`cargo build --release`), puts the program in
+`~/.local/bin/` and writes its `plugin.toml` (with `exec` pointing at that program) into the shared plugins directory
+`~/.config/lvim-plugins/lvim-fuzzy-plugin-preview/`; lvc, lfz and the Neovim picker find it there. The old `install = "bundled"` lines of a tool's
+config are gone (a tool refuses to start with one).
+
+## Where it is used
+
+| App | What for |
+|---|---|
+| **lvc** (lvim-fuzzy-commander) | the quick view (`vv`) and the viewer (`vf`): what the pane shows for the file under the cursor |
+| **lfz** (lvim-fuzzy-cli) | the preview pane of the finder: what is shown for the highlighted file |
+| **Neovim picker** (lvim-fuzzy-picker) | the preview of the highlighted file |
+
 ## Types and engines
 
 A **type** is a group of files; its `engine` shows it. A group matches by `ext`, `name`, `mime` (`"image/*"`) and / or

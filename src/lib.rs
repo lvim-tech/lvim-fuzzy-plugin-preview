@@ -394,33 +394,3 @@ mod tests {
     }
 }
 
-/// The engines that need no definition (for `--list`).
-pub const BUILTIN_ENGINES: [(&str, Option<&str>); 9] =
-    [("dir", None), ("table", None), ("archive", None), ("binary", None), ("hex", None), ("media", None), ("nvim", None), ("builtin", None), ("host", None)];
-
-// ----- shipping inside the tools -----
-
-/// The argument a tool is started with to BE this plugin: `<tool> --lvim-plugin preview`.
-pub const PLUGIN_ARGS: [&str; 2] = ["--lvim-plugin", "preview"];
-
-/// The plugin's `plugin.toml` as shipped.
-pub const MANIFEST: &str = include_str!("../plugin.toml");
-
-/// For a tool's `main`: if it was started to be this plugin (`--lvim-plugin preview`), be it (never returns).
-pub fn run_if_asked(args: &[String]) {
-    if args.first().map(String::as_str) == Some(PLUGIN_ARGS[0]) && args.get(1).map(String::as_str) == Some(PLUGIN_ARGS[1]) {
-        run();
-        std::process::exit(0);
-    }
-}
-
-/// Write the plugin's `plugin.toml` into the shared plugins directory `root`, with `exe` answering as the plugin. A tool calls this only when
-/// its config says so (`[plugins.lvim-fuzzy-plugin-preview] install = …`, see `lvim_fuzzy_plugin::bundled::Install`). Silent: a directory
-/// that cannot be written just means no preview plugin (the tool then shows no preview of those files).
-pub fn ensure_installed(root: &Path, exe: &Path) {
-    let b = lvim_fuzzy_plugin::bundled::Bundled { name: "lvim-fuzzy-plugin-preview", version: env!("CARGO_PKG_VERSION"), manifest: MANIFEST };
-    let _ = lvim_fuzzy_plugin::bundled::ensure(root, &b, exe, &PLUGIN_ARGS.join(" "));
-    // this plugin was `lvim-fuzzy-preview` before it joined the `lvim-fuzzy-plugin-*` family: the copy an older tool
-    // wrote would answer next to this one
-    let _ = lvim_fuzzy_plugin::bundled::retire(root, "lvim-fuzzy-preview");
-}
