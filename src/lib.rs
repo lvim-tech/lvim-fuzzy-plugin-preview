@@ -50,6 +50,7 @@ pub fn answer(ctx: &Value) -> Result<Value, String> {
         "table" => table(path, cfg),
         "archive" => archive_tree(path, cfg),
         "binary" => binary(path),
+        "hex" => hex(path, cfg),
         "media" => media_preview(path, ctx),
         // the tool is told how to show the file; it carries it out
         "nvim" | "builtin" => json!({"op": "preview", "renderer": engine}),
@@ -59,7 +60,7 @@ pub fn answer(ctx: &Value) -> Result<Value, String> {
             Some(e) => json!({"op": "preview", "missing": [format!("engines.{name}: kind `{}` — only \"command\" can be defined", e.get("kind").and_then(Value::as_str).unwrap_or(""))]}),
             None => json!({
                 "op": "preview",
-                "missing": [format!("types.{group}: engine \"{name}\" is neither built in (dir, table, archive, binary, nvim, builtin, host) nor defined in [engines.{name}]")],
+                "missing": [format!("types.{group}: engine \"{name}\" is neither built in (dir, table, archive, binary, hex, media, nvim, builtin, host) nor defined in [engines.{name}]")],
                 "renderer": "nvim",
             }),
         },
@@ -170,6 +171,56 @@ fn media_preview(path: &Path, ctx: &Value) -> Value {
     })
 }
 
+/// A hex dump of the start of a file: the offset, 16 bytes in hex, the same as characters; the facts above it.
+/// Coloured (ANSI): NUL dim, printable green, white space yellow, the rest cyan.
+fn hex(path: &Path, cfg: &Value) -> Value {
+    use std::io::Read;
+    if !path.is_file() {
+        return json!({"op": "pass"});
+    }
+    let limit = cfg["hex"]["bytes"].as_u64().unwrap_or(8192).clamp(16, 1 << 20) as usize;
+    let mut buf = Vec::new();
+    match std::fs::File::open(path).and_then(|f| f.take(limit as u64).read_to_end(&mut buf)) {
+        Ok(_) => {}
+        Err(e) => return json!({"op": "preview", "body": {"type": "text", "lines": [e.to_string()]}}),
+    }
+    let colour = |b: u8| match b {
+        0 => "\x1b[90m",
+        0x21..=0x7e => "\x1b[32m",
+        b' ' | b'\t' | b'\n' | b'\r' => "\x1b[33m",
+        _ => "\x1b[36m",
+    };
+    let lines: Vec<String> = buf
+        .chunks(16)
+        .enumerate()
+        .map(|(i, row)| {
+            let mut l = format!("\x1b[90m{:08x}\x1b[0m  ", i * 16);
+            for k in 0..16 {
+                match row.get(k) {
+                    Some(&b) => l += &format!("{}{b:02x}\x1b[0m ", colour(b)),
+                    None => l += "   ",
+                }
+                if k == 7 {
+                    l.push(' ');
+                }
+            }
+            l.push_str(" \x1b[90m│\x1b[0m");
+            for &b in row {
+                let c = if (0x20..0x7f).contains(&b) { b as char } else { '.' };
+                l += &format!("{}{c}\x1b[0m", colour(b));
+            }
+            l.push_str("\x1b[90m│\x1b[0m");
+            l
+        })
+        .collect();
+    let facts: Vec<Value> = if listview::is_binary(path) {
+        listview::binary_note(path).into_iter().map(|(k, v)| json!([k, v])).collect()
+    } else {
+        Vec::new()
+    };
+    json!({"op": "preview", "facts": facts, "body": {"type": "text", "ansi": true, "lines": lines}})
+}
+
 fn binary(path: &Path) -> Value {
     if !listview::is_binary(path) {
         return json!({"op": "pass"});
@@ -244,6 +295,21 @@ mod tests {
         std::fs::write(d.join("a.zip"), [0u8, 1, 2]).unwrap();
         let v = ask(&d.join("a.zip"), json!({}));
         assert!(v.get("facts").is_none(), "{v}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn hex_dumps_a_binary_file() {
+        let d = tmp("hex");
+        std::fs::write(d.join("b.bin"), (0u8..40).collect::<Vec<u8>>()).unwrap();
+        let v = ask(&d.join("b.bin"), json!({"types": {"binary": {"kind": ["binary"], "engine": "hex"}}}));
+        assert_eq!(v["facts"][0][1], "binary file");
+        let lines = v["body"]["lines"].as_array().unwrap();
+        assert_eq!(lines.len(), 3);
+        assert!(lines[0].as_str().unwrap().contains("00000000") && lines[2].as_str().unwrap().contains("00000020"));
+        // the number of bytes is configurable
+        let v = ask(&d.join("b.bin"), json!({"types": {"binary": {"kind": ["binary"], "engine": "hex"}}, "hex": {"bytes": 16}}));
+        assert_eq!(v["body"]["lines"].as_array().unwrap().len(), 1);
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -329,8 +395,8 @@ mod tests {
 }
 
 /// The engines that need no definition (for `--list`).
-pub const BUILTIN_ENGINES: [(&str, Option<&str>); 8] =
-    [("dir", None), ("table", None), ("archive", None), ("binary", None), ("media", None), ("nvim", None), ("builtin", None), ("host", None)];
+pub const BUILTIN_ENGINES: [(&str, Option<&str>); 9] =
+    [("dir", None), ("table", None), ("archive", None), ("binary", None), ("hex", None), ("media", None), ("nvim", None), ("builtin", None), ("host", None)];
 
 // ----- shipping inside the tools -----
 

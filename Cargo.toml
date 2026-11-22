@@ -1,6 +1,6 @@
 [package]
 name = "lvim-fuzzy-plugin-preview"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "BSD-3-Clause"
 description = "The preview provider plugin of the lvim tools: it COMPUTES the previews (a directory, a CSV / TSV table, an archive, a binary file ...); lvim-fuzzy-ui draws them"

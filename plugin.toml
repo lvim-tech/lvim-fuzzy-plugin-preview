@@ -3,7 +3,7 @@ runtime     = "process"
 exec        = "./target/release/lvim-fuzzy-plugin-preview"
 build       = "cargo build --release"
 hosts       = ["lvim-fuzzy-commander", "lvim-fuzzy-cli", "lvim-fuzzy-picker"]
-version     = "0.1.1"
+version     = "0.1.2"
 license     = "BSD-3-Clause"
 
 # EVERYTHING here is configuration: which kinds of file are shown by which ENGINE, and what the engines are. Override
@@ -26,7 +26,7 @@ ext    = ["tar", "gz", "tgz", "xz", "txz", "bz2", "tbz", "tbz2", "zst", "tzst", 
 engine = "archive"
 [config.types.binary]
 kind   = ["binary"]
-engine = "binary"
+engine = "hex"           # a hex dump with the facts above it; "binary" = the facts only
 # MEDIA: a picture, a video (a frame), a PDF page, a font sample, a sound's cover, an office document — the engine
 # `media` makes the facts and the picture (ffmpeg / pdftoppm / fontimage / LibreOffice are optional: what is missing
 # is said under the facts). Change one group to another engine, or add `mime = ["image/*"]` groups of your own.
@@ -59,7 +59,7 @@ engine = "media"
 kind   = ["text"]
 engine = "nvim"          # "nvim" | "builtin" | "bat" | any engine below.   e.g. rust = { ext = ["rs"], engine = "bat" }
 
-# ENGINES. The built-in ones need no definition: dir, table, archive, binary, media, nvim (a real Neovim: the embedded one
+# ENGINES. The built-in ones need no definition: dir, table, archive, binary, hex, media, nvim (a real Neovim: the embedded one
 # in lvc / lfz, the picker's own buffer), builtin (the tool's own highlighter), host (pass: the tool's own way).
 # Your own are `kind = "command"`: `command` runs with `{}` = the file, its output is the preview (`ansi` = it
 # carries colours). The program must be on the PATH: if it is not, the preview says so and shows the file plain.
@@ -74,6 +74,8 @@ ansi      = true
 
 [config.dir]
 hidden = false          # show the dot files of a directory
+[config.hex]
+bytes = 8192          # how many bytes of a binary file the hex dump shows
 [config.table]
 rows = 500              # how many lines of a CSV / TSV file are read
 [config.archive]
