@@ -17,9 +17,9 @@ path = "src/main.rs"
 
 [dependencies]
 # the computations (list a directory, read a table, list an archive) live here for now; the plugin is the thin process around them
-lvim-fuzzy-ui = { path = "../lvim-fuzzy-ui" }
+lvim-fuzzy-ui = { git = "https://github.com/lvim-tech/lvim-fuzzy-ui.git" }
 # writes its own plugin.toml into the shared plugins directory (the plugin ships inside lfz and lvc)
-lvim-fuzzy-plugin = { path = "../lvim-fuzzy-plugin", default-features = false }
+lvim-fuzzy-plugin = { git = "https://github.com/lvim-tech/lvim-fuzzy-plugin.git", default-features = false }
 serde_json = "1"
 
 [dev-dependencies]
